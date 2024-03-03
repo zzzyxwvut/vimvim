@@ -96,7 +96,6 @@ func RunTest()
       continue
     endif
 
-    let linecount = readfile(fname)->len()
     let root = fnamemodify(fname, ':t:r')
     let filetype = substitute(root, '\([^_.]*\)[_.].*', '\1', '')
     let failed_root = 'failed/' .. root
@@ -145,6 +144,18 @@ func RunTest()
 	  redraw!
 	endfunc
 
+	func WriteWrappedLineCount()
+	  let cells = getline(1, '$')
+	    \ ->map({i, v -> strdisplaywidth(v)})
+	  let limit = winwidth(0)
+	  let total = cells->len() + cells
+	    \ ->filter({i, v -> v > limit})
+	    \ ->map({i, v -> (v - 1) / limit})
+	    \ ->reduce({t, v -> t + v}, 0)
+	  " Use a plain file for IPC.
+	  call writefile([total], 'Xlinecount', 's')
+	  redraw!
+	endfunc
       END
       call writefile(lines, 'Xtestscript')
 
@@ -162,6 +173,8 @@ func RunTest()
       call term_sendkeys(buf, ":edit " .. fname .. "\<CR>")
       " load filetype specific settings
       call term_sendkeys(buf, ":call LoadFiletype('" .. filetype .. "')\<CR>")
+      " write (wrapped) line count for passed buf to "Xlinecount"
+      call term_sendkeys(buf, ":call WriteWrappedLineCount()\<CR>")
 
       if filetype == 'sh'
 	call term_sendkeys(buf, ":call ShellInfo()\<CR>")
@@ -171,6 +184,12 @@ func RunTest()
       let root_00 = root .. '_00'
       call ch_log('First screendump for ' .. fname .. ': failed/' .. root_00 .. '.dump')
       let fail = VerifyScreenDump(buf, root_00, {})
+
+      while !filereadable('Xlinecount')
+	sleep 50m
+      endwhile
+
+      let linecount = readfile('Xlinecount', '', 1)[0]
 
       " clear the shell info if there are not enough lines to cause a scroll
       if filetype == 'sh' && linecount <= 19
@@ -182,7 +201,7 @@ func RunTest()
       let nr = 1
       while linecount - topline > 20
 	let topline += 18
-	call term_sendkeys(buf, printf("%dGzt", topline))
+	call term_sendkeys(buf, '18gjzt')
 	let root_next = root .. printf('_%02d', nr)
 	call ch_log('Next screendump for ' .. fname .. ': failed/' .. root_next .. '.dump')
 	let fail += VerifyScreenDump(buf, root_next, {})
@@ -197,6 +216,7 @@ func RunTest()
 
       call StopVimInTerminal(buf)
       call delete('Xtestscript')
+      call delete('Xlinecount')
 
       " redraw here to avoid the following messages to get mixed up with screen
       " output.
