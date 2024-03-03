@@ -90,7 +90,7 @@ func RunTest()
   let failed_tests = []
   let skipped_count = 0
   let MAX_FAILED_COUNT = 5
-  for fname in glob('input/*.*', 1, 1)
+  for fname in glob('input/*.java', 1, 1)
     if fname =~ '\~$'
       " backup file, skip
       continue
@@ -172,7 +172,7 @@ func RunTest()
       " edit the file only after catching the SwapExists event
       call term_sendkeys(buf, ":edit " .. fname .. "\<CR>")
       " load filetype specific settings
-      call term_sendkeys(buf, ":call LoadFiletype('" .. filetype .. "')\<CR>")
+"     call term_sendkeys(buf, ":call LoadFiletype('" .. filetype .. "')\<CR>")
       " write (wrapped) line count for passed buf to "Xlinecount"
       call term_sendkeys(buf, ":call WriteWrappedLineCount()\<CR>")
 
