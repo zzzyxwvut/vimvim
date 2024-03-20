@@ -37,4 +37,4 @@ test:
 
 
 clean testclean:
-	rm -f testdir/failed/* testdir/done/* testdir/vimcmd testdir/messages testdir/Xtestscript
+	rm -f testdir/failed/* testdir/done/* testdir/vimcmd testdir/messages testdir/Xtestscript testdir/Xipcpayload

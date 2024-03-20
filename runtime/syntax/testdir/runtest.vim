@@ -69,6 +69,9 @@ if !isdirectory('done')
   call mkdir('done')
 endif
 
+" Obtain basic IPC support.
+source ipc/dispatch.vim
+
 set nocp
 set nowrapscan
 set report=9999
@@ -100,7 +103,6 @@ func RunTest()
       continue
     endif
 
-    let linecount = readfile(fname)->len()
     let root = fnamemodify(fname, ':t:r')
     let filetype = substitute(root, '\([^_.]*\)[_.].*', '\1', '')
     let failed_root = 'failed/' .. root
@@ -160,13 +162,28 @@ func RunTest()
 	  call cursor(1, 1)
 	  " BEGIN [runtime/defaults.vim]
 	  " Also, disable italic highlighting to avoid issues on some terminals.
-	  set display=truncate ruler scrolloff=5 t_ZH= t_ZR=
+	  set display=lastline ruler scrolloff=5 t_ZH= t_ZR=
 	  syntax on
 	  " END [runtime/defaults.vim]
 	  redraw!
 	endfunc
+
+	func s:Stride(state, width) abort
+	  let span = (1 + ((a:width > a:state.w)
+	    \ ? (a:width - 1) / a:state.w
+	    \ : 0))
+	  let a:state.t += span
+	  return a:state
+	endfunc
+
+	func SerialiseLineCount() abort
+	  let state = getline(1, '$')
+	    \ ->reduce({s, t -> s:Stride(s, strdisplaywidth(t))},
+		\ {'w': winwidth(0), 't': 0})
+	  call IPCWrite(state.t, 'Xipcpayload')
+	endfunc
       END
-      call writefile(lines, 'Xtestscript')
+      call writefile(extend(lines, IPCSupport()), 'Xtestscript')
 
       " close all but the last window
       while winnr('$') > 1
@@ -191,6 +208,8 @@ func RunTest()
       call term_sendkeys(buf, ":call SetUpVim()\<CR>")
       " load filetype specific settings
       call term_sendkeys(buf, ":call LoadFiletype('" .. filetype .. "')\<CR>")
+      call IPCFree('Xipcpayload')
+      call term_sendkeys(buf, ":call SerialiseLineCount()\<CR>")
 
       if filetype == 'sh'
 	call term_sendkeys(buf, ":call ShellInfo()\<CR>")
@@ -200,6 +219,9 @@ func RunTest()
       let root_00 = root .. '_00'
       call ch_log('First screendump for ' .. fname .. ': failed/' .. root_00 .. '.dump')
       let fail = VerifyScreenDump(buf, root_00, {})
+
+      " Try for about (50 * 40) milliseconds before aborting.
+      let linecount = get(IPCBusyRead('Xipcpayload', 40), 0, 0)
 
       " clear the shell info if there are not enough lines to cause a scroll
       if filetype == 'sh' && linecount <= 19
@@ -211,7 +233,9 @@ func RunTest()
       let nr = 1
       while linecount - topline > 20
 	let topline += 18
-	call term_sendkeys(buf, printf("%dGzt", topline))
+	" With "g^", align the contents of &ruler for the current "gj" and
+	" the succeeded "G".
+	call term_sendkeys(buf, '18gjztg^')
 	let root_next = root .. printf('_%02d', nr)
 	call ch_log('Next screendump for ' .. fname .. ': failed/' .. root_next .. '.dump')
 	let fail += VerifyScreenDump(buf, root_next, {})
@@ -226,6 +250,7 @@ func RunTest()
 
       call StopVimInTerminal(buf)
       call delete('Xtestscript')
+      call IPCFree('Xipcpayload')
 
       " redraw here to avoid the following messages to get mixed up with screen
       " output.
