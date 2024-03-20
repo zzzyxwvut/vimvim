@@ -828,6 +828,7 @@ RT_SCRIPTS =	\
 		runtime/syntax/testdir/ftplugin/*.* \
 		runtime/syntax/testdir/input/*.* \
 		runtime/syntax/testdir/input/setup/*.* \
+		runtime/syntax/testdir/ipc/*.* \
 		runtime/syntax/testdir/dumps/*.dump \
 		runtime/syntax/generator/Makefile \
 		runtime/syntax/generator/README.md \
