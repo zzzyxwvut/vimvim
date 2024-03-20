@@ -97,7 +97,7 @@ func RunTest()
   let setup = glob('input/setup/*.vim', 1, 1)
     \ ->reduce({d, f -> extend(d, {fnamemodify(f, ':t:r'): f})}, {})
 
-  for fname in glob('input/*.*', 1, 1)
+  for fname in glob('input/*.dots', 1, 1)
     if fname =~ '\~$'
       " backup file, skip
       continue
