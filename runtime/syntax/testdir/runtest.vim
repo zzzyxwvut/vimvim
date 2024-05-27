@@ -247,7 +247,7 @@ func RunTest()
 	    # COMPATIBILITY: Scroll up/down around "scrolloff" lines.
 	    &scrolloff = max([1, op_so])
 	  endtry
-	  exe 'norm! zt' .. &scrolloff .. 'jH'
+	  norm! zt
 	  const marknum: number = line("'c")
 	  # Eschew &smoothscroll since line("`c") is not supported.
 	  # Remember that "w0" can point to the first line of a _closed_ fold
@@ -257,7 +257,7 @@ func RunTest()
 	      exe "norm! \<C-y>"
 	    endwhile
 	    if line('w0') != marknum
-	      exe "norm! \<C-e>"
+	      exe "norm! \<C-e>H"
 	    endif
 	  # Handle non-wrapped lines.
 	  elseif line('w0') < marknum
@@ -265,7 +265,7 @@ func RunTest()
 	      exe "norm! \<C-e>"
 	    endwhile
 	    if line('w0') != marknum
-	      exe "norm! \<C-y>"
+	      exe "norm! \<C-y>H"
 	    endif
 	  endif
 	  norm! ^
