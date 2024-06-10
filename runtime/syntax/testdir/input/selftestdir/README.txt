@@ -1,6 +1,6 @@
 The test files with made-up syntax in this directory serve for additional
-linewise checks to carry out whenever the algorithm managing dump file
-generation (../../runtest.vim) requires further modification.
+linewise checks to be manually performed whenever the algorithm managing
+screen dump file generation is modified (../../runtest.vim#RunTest()).
 
 Please test any changes as follows:
 	cd runtime/syntax/

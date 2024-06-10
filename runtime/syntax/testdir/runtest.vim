@@ -199,7 +199,8 @@ func RunTest()
 	    set scrolloff=0
 	    # Advance mark "c"[ursor] along with the cursor.
 	    norm! Lmc
-	    if strdisplaywidth(getline('.')) >= estate
+	    if foldclosed('.') < 0 &&
+		(strdisplaywidth(getline('.')) + &l:fdc * winheight(1)) >= estate
 	      # Make for an exit for a screenful long line.
 	      norm! j^
 	      return
@@ -229,7 +230,8 @@ func RunTest()
 	    set scrolloff=0
 	    # Advance mark "c"[ursor] along with the cursor.
 	    norm! Lmc
-	    if strdisplaywidth(getline('.')) >= estate
+	    if foldclosed('.') < 0 &&
+		(strdisplaywidth(getline('.')) + &l:fdc * winheight(1)) >= estate
 	      # Make for an exit for a screenful long line.
 	      norm! j^
 	      return
