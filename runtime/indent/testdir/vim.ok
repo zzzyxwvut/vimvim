@@ -1,6 +1,7 @@
 " vim: set ft=vim sw=4 :
 
 " START_INDENT
+" INDENT_EXE let g:vim_indent = {'searchpair_timeout': 1024}
 func Some()
     let x = 1
 endfunc

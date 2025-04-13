@@ -1,6 +1,7 @@
 # vim: set ft=python sw=4 et:
 
 # START_INDENT
+# INDENT_EXE let g:python_indent.pyindent_searchpair_timeout = 1024
 dict = {
         'a': 1,
         'b': 2,
