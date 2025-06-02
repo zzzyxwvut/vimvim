@@ -62,6 +62,8 @@ if has('gui_running')
   set columns=80 lines=25
 endif
 
+call mkdir('failed', 'p')
+
 " Check that the screen size is at least 24 x 80 characters.
 if &lines < 24 || &columns < 80
   let error = 'Screen size too small! Tests require at least 24 lines with 80 characters, got ' .. &lines .. ' lines with ' .. &columns .. ' characters'
@@ -236,6 +238,7 @@ endfunc
 let g:timeout_start = 0
 
 func RunTheTest(test)
+  call writefile([printf('1: %d x %d, %s', &lines, &columns, a:test)], 'failed/00-TRACE_LOG', 'a')
   let prefix = ''
   if has('reltime')
     let prefix = strftime('%M:%S', localtime() - s:test_start_time) .. ' '
@@ -295,7 +298,9 @@ func RunTheTest(test)
     endif
   else
     try
+      call writefile([printf('2: %d x %d, %s', &lines, &columns, a:test)], save_cwd .. '/failed/00-TRACE_LOG', 'a')
       exe 'call ' . a:test
+      call writefile([printf('3: %d x %d, %s', &lines, &columns, a:test)], save_cwd .. '/failed/00-TRACE_LOG', 'a')
     catch /^\cskipped/
       call add(s:messages, '    Skipped')
       call add(s:skipped, 'SKIPPED ' . a:test . ': ' . substitute(v:exception, '^\S*\s\+', '',  ''))
@@ -332,6 +337,7 @@ func RunTheTest(test)
   au!
   au SwapExists * call HandleSwapExists()
 
+  call writefile([printf('4: %d x %d, %s', &lines, &columns, a:test)], 'failed/00-TRACE_LOG', 'a')
   " Check for and close any stray popup windows.
   if has('popupwin')
     call assert_equal([], popup_list(), 'Popup is still present')

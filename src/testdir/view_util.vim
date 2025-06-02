@@ -60,6 +60,7 @@ func NewWindow(height, width) abort
 endfunc
 
 func CloseWindow() abort
+  set nowinfixwidth nowinfixheight
   bw!
   redraw!
 endfunc

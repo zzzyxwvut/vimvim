@@ -948,6 +948,10 @@ endfunc
 
 func Test_cursor_position_with_showbreak()
   CheckScreendump
+  if has('gui_running')
+    call mkdir('failed', 'p')
+    call writefile(['FORCING: 25 x 80'], 'failed/00-TRACE_LOG', 'a')
+  endif
 
   let lines =<< trim END
       vim9script
@@ -980,6 +984,10 @@ endfunc
 
 func Test_visual_starts_before_skipcol()
   CheckScreendump
+  if has('gui_running')
+    call mkdir('failed', 'p')
+    call writefile(['FORCING: 25 x 80'], 'failed/00-TRACE_LOG', 'a')
+  endif
 
   let lines =<< trim END
     1new
@@ -1166,12 +1174,21 @@ func Test_breakindent_change_display_uhex()
 endfunc
 
 func Test_breakindent_list_split()
+" if &columns < 80
+"   set columns=80
+" endif
+  let widths = []
+  call add(widths, printf("%d: %d (of %d) x %d (of %d)", winnr(), winwidth(0), &columns, winheight(0), &lines))
   10new
+  call add(widths, printf("%d: %d", winnr(), winwidth(0)))
   61vsplit
+  call add(widths, printf("%d: %d, %d", winnr(), winwidth(1), winwidth(2)))
   setlocal tabstop=8 breakindent list listchars=tab:<->,eol:$
   put =s:input
   30vsplit
+  call add(widths, printf("%d: %d, %d, %d", winnr(), winwidth(1), winwidth(2), winwidth(3)))
   setlocal listchars=eol:$
+  call add(widths, printf("%d: %d, %d, %d", winnr(), winwidth(1), winwidth(2), winwidth(3)))
   let expect = [
       \ "^IabcdefghijklmnopqrstuvwxyzAB|<------>abcdefghijklmnopqrstuv",
       \ "  CDEFGHIJKLMNOP$             |        wxyzABCDEFGHIJKLMNOP$ ",
@@ -1179,13 +1196,21 @@ func Test_breakindent_list_split()
       \ ]
   redraw!
   let lines = s:screen_lines(line('.'), 61)
-  call s:compare_lines(expect, lines)
+  if s:compare_lines(expect, lines)
+    call add(widths, 'failure for #' . winnr())
+  endif
   wincmd p
+  call add(widths, printf("%d: %d, %d, %d", winnr(), winwidth(1), winwidth(2), winwidth(3)))
+  call add(widths, '')
   redraw!
   let lines = s:screen_lines(line('.'), 61)
-  call s:compare_lines(expect, lines)
+  if s:compare_lines(expect, lines)
+    call add(widths, 'failure for #' . winnr())
+  endif
 
   bwipe!
+  call mkdir('failed', 'p')
+  call writefile(widths, 'failed/00-TRACE_LOG', 'a')
 endfunc
 
 func Test_breakindent_min_with_signcol()
