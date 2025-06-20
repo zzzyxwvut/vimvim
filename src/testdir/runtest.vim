@@ -69,6 +69,8 @@ else
   endfunc
 endif
 
+call mkdir('failed', 'p')
+
 " Check that the screen size is at least 24 x 80 characters.
 if &lines < 24 || &columns < 80
   let error = 'Screen size too small! Tests require at least 24 lines with 80 characters, got ' .. &lines .. ' lines with ' .. &columns .. ' characters'
@@ -281,6 +283,7 @@ func RunTheTest(test)
 
   " Permit "SetUp()" implementations to override default settings.
   call s:SetDefaultOptionsForGUIBuilds()
+  call writefile([printf('%d x %d, %s', &lines, &columns, a:test)], 'failed/00-TRACE_LOG', 'a')
 
   if exists("*SetUp")
     try
