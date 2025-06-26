@@ -100,6 +100,8 @@ jobs:
         run: |
           # Apple diff is broken. Use GNU diff instead. See #14032.
           brew install diffutils
+          # Fetch "timeout".
+          brew install coreutils
 
       - name: Test
         timeout-minutes: 25

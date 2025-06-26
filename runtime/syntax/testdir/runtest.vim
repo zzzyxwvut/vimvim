@@ -240,6 +240,9 @@ def s:PreFileComparisonAction(
   for lstr: string in keys(state)
     const lnum: number = str2nr(lstr)
     const prefix: number = stridx(testdump[lnum], "\xef\xbf\xbd")
+    writefile([printf('D:  PRE: %s', testdump[lnum])], $VIM_SYNTAX_TEST_LOG, 'a')
+    writefile([printf('D:  PRE: %s', string(str2list(testdump[lnum])))], $VIM_SYNTAX_TEST_LOG, 'a')
+    writefile([printf('D:  PRE: %d', prefix)], $VIM_SYNTAX_TEST_LOG, 'a')
     # Retroactively discard non-equal line suffixes.  It is assumed that no
     # runs of U+EFU+BFU+BD and no U+FFFDs are present in "refdump".
     if prefix >= 0
@@ -251,6 +254,8 @@ def s:PreFileComparisonAction(
 	refdump[lnum] = strpart(refdump[lnum], 0, prefix)
 	testdump[lnum] = strpart(testdump[lnum], 0, prefix)
       endif
+      writefile([printf('D:  PRE: %s', refdump[lnum])], $VIM_SYNTAX_TEST_LOG, 'a')
+      writefile([printf('D:  PRE: %s', testdump[lnum])], $VIM_SYNTAX_TEST_LOG, 'a')
     endif
   endfor
 enddef
@@ -261,6 +266,8 @@ def s:PostNonEqualLineComparisonAction(
 	state: dict<number>,
 	testdump: list<string>,
 	lnum: number)
+  writefile([printf('D: POST: %s', testdump[lnum])], $VIM_SYNTAX_TEST_LOG, 'a')
+  writefile([printf('D: POST: %s', str2list(testdump[lnum]))], $VIM_SYNTAX_TEST_LOG, 'a')
   if stridx(testdump[lnum], "\xef\xbf\xbd") >= 0
     state[string(lnum)] = 1
   endif

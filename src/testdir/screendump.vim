@@ -76,7 +76,7 @@ func VerifyScreenDump(buf, filename, options, ...)
   if has_key(options_copy, 'wait')
     let max_loops = max([0, remove(options_copy, 'wait')])
   else
-    let max_loops = 1000
+    let max_loops = 10
   endif
   if has_key(options_copy, 'PreFileComparisonAction')
     let PreFileComparisonAction = remove(options_copy, 'PreFileComparisonAction')
@@ -165,6 +165,7 @@ func VerifyScreenDump(buf, filename, options, ...)
     if i > 0
       call remove(v:errors, -1)
     endif
+    call writefile([printf('D: %4d: %s', i, msg)], $VIM_SYNTAX_TEST_LOG, 'a')
     call assert_report(msg)
 
     let i += 1
