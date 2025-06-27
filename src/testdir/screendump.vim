@@ -34,9 +34,25 @@ enddef
 
 
 " Verify that Vim running in terminal buffer "buf" matches the screen dump.
-" "options" is passed to term_dumpwrite().
-" Additionally, the "wait" entry can specify the maximum time to wait for the
-" screen dump to match in msec (default 1000 msec).
+"
+" A copy of "options" is passed to "term_dumpwrite()".  For convenience, this
+" dictionary supports other optional entries:
+"   "wait", (default to 1000 msec at least)
+"	the maximum time to wait for the screen dump to match in msec.
+"   "PreFileComparisonAction", (default to a no-op action)
+"	some Funcref to call, passing the following three arguments, each time
+"	before the file contents of two screen dumps are compared:
+"	    some dictionary with some state entries;
+"	    the file contents of the newly generated screen dump;
+"	    the file contents of the reference screen dump.
+"   "PostNonEqualLineComparisonAction", (default to a no-op action)
+"	some Funcref to call, passing the following three arguments, each time
+"	after a corresponding pair of lines is found not equal:
+"	    some dictionary with some state entries;
+"	    the file contents of the newly generated screen dump;
+"	    the zero-based number of the line whose copies are not equal.
+" (See an example in runtime/syntax/testdir/runtest.vim.)
+"
 " The file name used is "dumps/{filename}.dump".
 "
 " To ignore part of the dump, provide a "dumps/{filename}.vim" file with
@@ -49,14 +65,29 @@ enddef
 " Returns non-zero when verification fails.
 func VerifyScreenDump(buf, filename, options, ...)
   if has('gui_running') && exists("g:check_screendump_called") && g:check_screendump_called == v:false
-      echoerr "VerifyScreenDump() called from a test that lacks a CheckScreendump guard."
-      return 1
+    echoerr "VerifyScreenDump() called from a test that lacks a CheckScreendump guard."
+    return 1
   endif
   let reference = 'dumps/' . a:filename . '.dump'
   let filter = 'dumps/' . a:filename . '.vim'
   let testfile = 'failed/' . a:filename . '.dump'
 
-  let max_loops = get(a:options, 'wait', 1000) / 1
+  let options_copy = copy(a:options)
+  if has_key(options_copy, 'wait')
+    let max_loops = max([0, remove(options_copy, 'wait')])
+  else
+    let max_loops = 1000
+  endif
+  if has_key(options_copy, 'PreFileComparisonAction')
+    let PreFileComparisonAction = remove(options_copy, 'PreFileComparisonAction')
+  else
+    let PreFileComparisonAction = {_state, _testdump, _refdump -> 0}
+  endif
+  if has_key(options_copy, 'PostNonEqualLineComparisonAction')
+    let PostNonEqualLineComparisonAction = remove(options_copy, 'PostNonEqualLineComparisonAction')
+  else
+    let PostNonEqualLineComparisonAction = {_state, _testdump, _lnum -> 0}
+  endif
 
   " Starting a terminal to make a screendump is always considered flaky.
   let g:test_is_flaky = 1
@@ -82,12 +113,13 @@ func VerifyScreenDump(buf, filename, options, ...)
     call mkdir('failed')
   endif
 
+  let state = {}
   let i = 0
   while 1
     " leave a bit of time for updating the original window while we spin wait.
     sleep 1m
     call delete(testfile)
-    call term_dumpwrite(a:buf, testfile, a:options)
+    call term_dumpwrite(a:buf, testfile, options_copy)
 
     if refdump->empty()
       let msg = 'See new dump file: call term_dumpload("testdir/' .. testfile .. '")'
@@ -98,6 +130,7 @@ func VerifyScreenDump(buf, filename, options, ...)
     endif
 
     let testdump = ReadAndFilter(testfile, filter)
+    call PreFileComparisonAction(state, testdump, refdump)
     if refdump == testdump
       call delete(testfile)
       if did_mkdir
@@ -123,6 +156,7 @@ func VerifyScreenDump(buf, filename, options, ...)
       endif
       if testdump[j] != refdump[j]
 	let msg = msg . '; difference in line ' . (j + 1) . ': "' . testdump[j] . '"'
+	call PostNonEqualLineComparisonAction(state, testdump, j)
       endif
     endfor
 
@@ -140,3 +174,5 @@ func VerifyScreenDump(buf, filename, options, ...)
   endwhile
   return 0
 endfunc
+
+" vim:sw=2:ts=8:noet:

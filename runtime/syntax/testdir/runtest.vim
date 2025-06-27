@@ -105,15 +105,15 @@ func HandleSwapExists()
   endif
 endfunc
 
-" Trace ruler liveness on demand.
+" Trace liveness on demand.
 if !empty($VIM_SYNTAX_TEST_LOG) && filewritable($VIM_SYNTAX_TEST_LOG)
-  def s:TraceRulerLiveness(context: string, times: number, tail: string)
+  def s:TraceLiveness(context: string, times: number, tail: string)
     writefile([printf('%s: %4d: %s', context, times, tail)],
 	$VIM_SYNTAX_TEST_LOG,
 	'a')
   enddef
 else
-  def s:TraceRulerLiveness(_: string, _: number, _: string)
+  def s:TraceLiveness(_: string, _: number, _: string)
   enddef
 endif
 
@@ -176,7 +176,7 @@ def s:TermPollRuler(
       redraw
     endif
   endwhile
-  TraceRulerLiveness('P', (2048 - times), in_name_and_out_name)
+  TraceLiveness('P', (2048 - times), in_name_and_out_name)
   return ruler
 enddef
 
@@ -209,7 +209,7 @@ def s:TermWaitAndPollRuler(buf: number, in_name_and_out_name: string): list<stri
       redraw
     endif
   endwhile
-  TraceRulerLiveness('W', (32768 - times), in_name_and_out_name)
+  TraceLiveness('W', (32768 - times), in_name_and_out_name)
   if strpart(ruler, 0, 8) !=# 'is_nonce'
     # Retain any of "b:is_(bash|dash|kornshell|posix|sh)" entries and let
     # "CannotDumpShellFirstPage()" win the cursor race.
@@ -226,6 +226,44 @@ def s:TermWaitAndPollRuler(buf: number, in_name_and_out_name: string): list<stri
       function(CannotDumpFirstPage, [buf, []]),
       buf,
       in_name_and_out_name)
+enddef
+
+" Accommodate rendering idiosyncrasies (see #16559).  (This function runs in
+" couples with "s:PostNonEqualLineComparisonAction()".)
+def s:PreFileComparisonAction(
+	state: dict<number>,
+	testdump: list<string>,
+	refdump: list<string>)
+  if empty(state) || len(testdump) != len(refdump)
+    return
+  endif
+  for lstr: string in keys(state)
+    const lnum: number = str2nr(lstr)
+    const prefix: number = stridx(testdump[lnum], "\xef\xbf\xbd")
+    # Retroactively discard non-equal line suffixes.  It is assumed that no
+    # runs of U+EFU+BFU+BD and no U+FFFDs are present in "refdump".
+    if prefix >= 0
+      const stem: number = strlen(refdump[lnum])
+      if prefix > stem
+	refdump[lnum] = strpart(refdump[lnum], 0, stem)
+	testdump[lnum] = strpart(testdump[lnum], 0, stem)
+      else
+	refdump[lnum] = strpart(refdump[lnum], 0, prefix)
+	testdump[lnum] = strpart(testdump[lnum], 0, prefix)
+      endif
+    endif
+  endfor
+enddef
+
+" Accommodate rendering idiosyncrasies (see #16559).  (This function runs in
+" couples with "s:PreFileComparisonAction()".)
+def s:PostNonEqualLineComparisonAction(
+	state: dict<number>,
+	testdump: list<string>,
+	lnum: number)
+  if stridx(testdump[lnum], "\xef\xbf\xbd") >= 0
+    state[string(lnum)] = 1
+  endif
 enddef
 
 func RunTest()
@@ -383,10 +421,15 @@ func RunTest()
     enddef
   END
   let MAX_FAILED_COUNT = 5
-  let DUMP_OPTS = exists("$VIM_SYNTAX_TEST_WAIT_TIME") &&
+  let DUMP_OPTS = extend(
+	  \ exists("$VIM_SYNTAX_TEST_WAIT_TIME") &&
 	  \ !empty($VIM_SYNTAX_TEST_WAIT_TIME)
-      \ ? {'wait': max([1, str2nr($VIM_SYNTAX_TEST_WAIT_TIME)])}
-      \ : {}
+	      \ ? {'wait': max([1, str2nr($VIM_SYNTAX_TEST_WAIT_TIME)])}
+	      \ : {},
+      \ {'PreFileComparisonAction':
+	  \ function('s:PreFileComparisonAction'),
+      \ 'PostNonEqualLineComparisonAction':
+	  \ function('s:PostNonEqualLineComparisonAction')})
   lockvar DUMP_OPTS MAX_FAILED_COUNT XTESTSCRIPT
   let ok_count = 0
   let disused_pages = []
