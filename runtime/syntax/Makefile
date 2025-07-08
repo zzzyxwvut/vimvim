@@ -14,12 +14,12 @@ VIMRUNTIME = ../..
 # VALGRIND = valgrind --tool=memcheck --leak-check=yes --num-callers=45 --log-file=valgrind.$*
 
 # Trace liveness on demand.
-# VIM_SYNTAX_TEST_LOG = `pwd`/testdir/failed/00-TRACE_LOG
+VIM_SYNTAX_TEST_LOG = `pwd`/testdir/failed/00-TRACE_LOG
 
-# ENVVARS = LC_ALL=C VIM_SYNTAX_TEST_LOG="$(VIM_SYNTAX_TEST_LOG)"
+ENVVARS = LC_ALL=C VIM_SYNTAX_TEST_LOG="$(VIM_SYNTAX_TEST_LOG)"
 # ENVVARS = LC_ALL=C LANG=C LANGUAGE=C
 # Run the syntax tests with a C locale
-ENVVARS = LC_ALL=C
+# ENVVARS = LC_ALL=C
 
 RUN_VIMTEST = VIMRUNTIME=$(VIMRUNTIME) $(VALGRIND) $(ENVVARS) ../$(VIMPROG) -f $(GUI_FLAG)
 
@@ -40,12 +40,17 @@ test:
 	@echo "../$(VIMPROG)" > testdir/vimcmd
 	@echo "$(RUN_VIMTEST)" >> testdir/vimcmd
 	@# Trace liveness on demand.
-	@#mkdir -p testdir/failed
-	@#touch "$(VIM_SYNTAX_TEST_LOG)"
-	VIMRUNTIME=$(VIMRUNTIME) $(ENVVARS) $(VIMPROG) --clean --not-a-term $(DEBUGLOG) -u testdir/runtest.vim > /dev/null
+	@mkdir -p testdir/failed
+	@touch "$(VIM_SYNTAX_TEST_LOG)"
+	@env > "$(VIM_SYNTAX_TEST_LOG)"
+	-command -v pgrep >> "$(VIM_SYNTAX_TEST_LOG)"
+	-command -v timeout >> "$(VIM_SYNTAX_TEST_LOG)"
+	-command -v uptime >> "$(VIM_SYNTAX_TEST_LOG)"
+	-command -v yes >> "$(VIM_SYNTAX_TEST_LOG)"
+	status() { return $$1; }; ( case "$$USER" in cirrus) x=5; y=15; z=$$(($$x * $$y * 2));; *) x=15; y=2; z=$$(($$x * $$y * 2));; esac; n=1; while test "$$n" -lt "$$x"; do timeout -k 8 $$z yes > /dev/null & sleep $$y; printf "\n%s\n%s\n\n" "`uptime`" "`pgrep ^yes`" >> $(VIM_SYNTAX_TEST_LOG); n=$$(($$n + 1)); z=$$(($$z - $$y)); done ) & p=$$!; s=0; printf "\n%s\n" "`date +%s`" >> "$(VIM_SYNTAX_TEST_LOG)"; VIMRUNTIME=$(VIMRUNTIME) $(ENVVARS) $(VIMPROG) --clean --not-a-term $(DEBUGLOG) -u testdir/runtest.vim > /dev/null || s=$$?; date +%s >> "$(VIM_SYNTAX_TEST_LOG)"; wait $$p; status $$s
 	@# FIXME: Temporarily show the whole file to find out what goes wrong
 	@#if [ -f testdir/messages ]; then tail -n 6 testdir/messages; fi
-	@if [ -f testdir/messages ]; then cat testdir/messages; fi
+	@#if [ -f testdir/messages ]; then cat testdir/messages; fi
 
 # add dependence on syntax files
 testdir/testdeps.mk:
@@ -54,7 +59,7 @@ testdir/testdeps.mk:
 -include testdir/testdeps.mk
 
 clean testclean:
-	rm -f testdir/failed/* testdir/done/* testdir/vimcmd testdir/messages testdir/Xtestscript testdir/Xfilter testdir/testdeps.mk
+	rm -rf testdir/failed/*/* testdir/failed/* testdir/done/* testdir/vimcmd testdir/messages testdir/Xtestscript testdir/Xfilter testdir/testdeps.mk
 
 # Collect all input filenames and their file types.
 testnames != set +f; \

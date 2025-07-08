@@ -198,6 +198,8 @@ def s:CannotUseRealEstate(in_name_and_out_name: string): bool
 	in_name_and_out_name,
 	winwidth(1),
 	winheight(1)))
+    TraceLiveness('X', 0, printf('aborting for %s: (%d x %d)',
+      in_name_and_out_name, winwidth(1), winheight(1)))
     return true
   endif
   return false
