@@ -68,6 +68,7 @@ VIM_SYNTAX_TEST_WAIT_TIME =
 syntaxtest:
 	cd runtime/syntax && \
 		$(MAKE) clean && \
+		$(MAKE) executables && \
 		$(MAKE) test VIMPROG="$(VIM_FOR_SYNTAXTEST)"
 
 
