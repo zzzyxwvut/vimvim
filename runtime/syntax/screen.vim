@@ -2,7 +2,7 @@
 " Language:             screen(1) configuration file
 " Maintainer:           Dmitri Vereshchagin <dmitri.vereshchagin@gmail.com>
 " Previous Maintainer:  Nikolai Weibull <now@bitwi.se>
-" Latest Revision:      2015-09-24
+" Latest Revision:      2026 Jun 18
 
 if exists("b:current_syntax")
   finish
@@ -11,7 +11,7 @@ endif
 let s:cpo_save = &cpo
 set cpo&vim
 
-syn match   screenEscape    '\\.'
+syn match   screenEscape    '\\.' contains=@screenNumbers
 
 syn keyword screenTodo      contained TODO FIXME XXX NOTE
 
@@ -19,18 +19,33 @@ syn region  screenComment   display oneline start='#' end='$'
                           \ contains=screenTodo,@Spell
 
 syn region  screenString    display oneline start=+"+ skip=+\\"+ end=+"+
-                          \ contains=screenVariable,screenSpecial
+                          \ contains=screenVariable,screenSpecials,screenEscape,@screenNumbers
 
 syn region  screenLiteral   display oneline start=+'+ skip=+\\'+ end=+'+
 
-syn match   screenVariable  contained display '$\%(\h\w*\|{\h\w*}\)'
+syn match   screenVariable  display '$\%(\h\w*\|{\h\w*}\)'
 
 syn keyword screenBoolean   on off
 
-syn match   screenNumbers   display '\<\d\+\>'
+syn match   screenHexadecimalNumber contained display
+                          \ '\%(\<x\|#\)\x\x\x\%(\x\x\x\)\?\>'
+syn match   screenDecimalNumber display '\<\d\+\>'
+syn match   screenOctalNumber display '\<0\o\+\>'
+syn cluster screenNumbers   contains=screenDecimalNumber,screenOctalNumber,screenHexadecimalNumber
 
-syn match   screenSpecials  contained
-                          \ '%\%([%aAdDhlmMstuwWyY?:{]\|[0-9]*n\|0?cC\)'
+" FIXME: Undocumented escape characters (winmsg.h): "g" (see commit
+" 945ad5414), "N" (49f592e21), "p" (6ead6f557), "T" (60893c465).
+syn region  screenSpecials  contained start=+%{+ end=+}+ contains=@screenNumbers
+syn match   screenSpecials  contained '%[%aAdeEfFghHlmNPsStTuxXyY?:]'
+syn match   screenSpecials  contained '%0\?[cC]' contains=screenSpecialsQualifier
+syn match   screenSpecials  contained '%L\?[DM]' contains=screenSpecialsQualifier
+syn match   screenSpecials  contained '%\d*[n`]' contains=screenSpecialsQualifier
+syn match   screenSpecials  contained '%-\?O' contains=screenSpecialsQualifier
+syn match   screenSpecials  contained '%+\?p' contains=screenSpecialsQualifier
+syn match   screenSpecials  contained '%[-+L]\?[wW]' contains=screenSpecialsQualifier
+syn match   screenSpecials  contained '%\%(\d\+\|[-+L]\)\?[=<>]' contains=screenSpecialsQualifier
+syn match   screenSpecialsQualifier contained '\d\+'
+syn match   screenSpecialsQualifier contained '[-+L]'
 
 syn keyword screenCommands
                           \ acladd
@@ -48,26 +63,6 @@ syn keyword screenCommands
                           \ autonuke
                           \ backtick
                           \ bce
-                          \ bd_bc_down
-                          \ bd_bc_left
-                          \ bd_bc_right
-                          \ bd_bc_up
-                          \ bd_bell
-                          \ bd_braille_table
-                          \ bd_eightdot
-                          \ bd_info
-                          \ bd_link
-                          \ bd_lower_left
-                          \ bd_lower_right
-                          \ bd_ncrc
-                          \ bd_port
-                          \ bd_scroll
-                          \ bd_skip
-                          \ bd_start_braille
-                          \ bd_type
-                          \ bd_upper_left
-                          \ bd_upper_right
-                          \ bd_width
                           \ bell
                           \ bell_msg
                           \ bind
@@ -99,6 +94,7 @@ syn keyword screenCommands
                           \ defbreaktype
                           \ defc1
                           \ defcharset
+                          \ defdynamictitle
                           \ defencoding
                           \ defescape
                           \ defflow
@@ -119,12 +115,12 @@ syn keyword screenCommands
                           \ defutf8
                           \ defwrap
                           \ defwritelock
-                          \ defzombie
                           \ detach
                           \ digraph
                           \ dinfo
                           \ displays
                           \ dumptermcap
+                          \ dynamictitle
                           \ echo
                           \ encoding
                           \ escape
@@ -243,6 +239,43 @@ syn keyword screenCommands
                           \ zombie
                           \ zombie_timeout
 
+syn keyword screenVersion5Commands
+                          \ auth
+                          \ multiinput
+                          \ status
+                          \ truecolor
+
+" Braille navigation commands from a superset program Dotscreen (see some
+" descriptions in doc/README.DOTSCREEN).
+syn keyword dotscreenCommands
+                          \ bd_bc_down
+                          \ bd_bc_left
+                          \ bd_bc_right
+                          \ bd_bc_up
+                          \ bd_bell
+                          \ bd_braille_table
+                          \ bd_eightdot
+                          \ bd_info
+                          \ bd_link
+                          \ bd_lower_left
+                          \ bd_lower_right
+                          \ bd_ncrc
+                          \ bd_port
+                          \ bd_scroll
+                          \ bd_skip
+                          \ bd_start_braille
+                          \ bd_type
+                          \ bd_upper_left
+                          \ bd_upper_right
+                          \ bd_width
+
+syn keyword screenDeprecatedCommands
+                          \ debug
+                          \ maxwin
+                          \ nethack
+                          \ password
+                          \ time
+
 hi def link screenEscape    Special
 hi def link screenComment   Comment
 hi def link screenTodo      Todo
@@ -250,9 +283,14 @@ hi def link screenString    String
 hi def link screenLiteral   String
 hi def link screenVariable  Identifier
 hi def link screenBoolean   Boolean
-hi def link screenNumbers   Number
+hi def link screenDecimalNumber Number
+hi def link screenOctalNumber screenDecimalNumber
+hi def link screenHexadecimalNumber screenDecimalNumber
 hi def link screenSpecials  Special
 hi def link screenCommands  Keyword
+hi def link screenSpecialsQualifier Underlined
+hi def link screenVersion5Commands screenCommands
+hi def link dotscreenCommands screenCommands
 
 let b:current_syntax = "screen"
 
