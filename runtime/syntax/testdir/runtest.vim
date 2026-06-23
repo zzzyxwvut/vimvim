@@ -250,6 +250,13 @@ enddef
 func RunTest()
   defer s:DeleteVimcmdCopy()
   let XTESTSCRIPT =<< trim END
+    if !empty($VIM_NO_SYN_PREFILTER)
+      call writefile(['without syn_prefilter'], $VIM_SYNTAX_TEST_LOG, 'a')
+      call test_override('syn_prefilter', 1)
+    else
+      call writefile(['with syn_prefilter'], $VIM_SYNTAX_TEST_LOG, 'a')
+    endif
+
     " Track the cursor progress through a syntax test file so that any
     " degenerate input can be reported.  Each file will have its own cursor.
     let s:cursor = 1

@@ -3,7 +3,7 @@ vim9script
 # Vim functions for file type detection
 #
 # Maintainer:		The Vim Project <https://github.com/vim/vim>
-# Last Change:		2026 Jun 14
+# Last Change:		2026 Jun 23
 # Former Maintainer:	Bram Moolenaar <Bram@vim.org>
 
 # These functions are moved here from runtime/filetype.vim to make startup
@@ -1843,6 +1843,9 @@ const ft_from_ext = {
   "zone": "bindzone",
   # Blank
   "bl": "blank",
+  # Brainfuck
+  "b": "brainfuck",
+  "bf": "brainfuck",
   # Brighterscript
   "bs": "brighterscript",
   # Brightscript

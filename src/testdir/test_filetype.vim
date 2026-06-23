@@ -150,6 +150,7 @@ def s:GetFilenameChecks(): dict<list<string>>
     blueprint: ['file.blp'],
     bp: ['Android.bp'],
     bpftrace: ['file.bt'],
+    brainfuck: ['file.b', 'file.bf'],
     brighterscript: ['file.bs'],
     brightscript: ['file.brs'],
     bsdl: ['file.bsd', 'file.bsdl'],

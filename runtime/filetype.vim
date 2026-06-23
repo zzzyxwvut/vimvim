@@ -1,7 +1,7 @@
 " Vim support file to detect file types
 "
 " Maintainer:		The Vim Project <https://github.com/vim/vim>
-" Last Change:		2026 Jun 03
+" Last Change:		2026 Jun 23
 " Former Maintainer:	Bram Moolenaar <Bram@vim.org>
 
 " If the filetype can be detected from extension or file name(the final path component),
@@ -181,6 +181,9 @@ if has("fname_case")
   " There is another check for BUILD and BUCK further below.
   au BufNewFile,BufRead *.BUILD,BUILD,BUCK		setf bzl
 endif
+
+" Brainfuck
+au BufNewFile,BufRead *.b,*.bf				setf brainfuck
 
 " Bundle config
 au BufNewFile,BufRead */.bundle/config			setf yaml
@@ -1583,6 +1586,9 @@ au BufNewFile,BufRead *vimrc*			call s:StarSetf('vim')
 
 " Subversion commit file
 au BufNewFile,BufRead svn-commit*.tmp		setf svn
+
+" Whitespace
+au BufNewFile,BufRead *.whs			setf whitespace
 
 " Wireguard config
 au BufNewFile,BufRead */etc/wireguard/*.conf    setf dosini
